@@ -117,7 +117,7 @@ fn visit(ty: &Type, var: &TokenStream, defs: &Definitions) -> (Option<TokenStrea
 }
 
 // Determine if a type should have span information added (conservative list)
-fn should_have_span(ident: &str) -> bool {
+pub(crate) fn should_have_span(ident: &str) -> bool {
     // Only add spans to core types that are most likely to implement syn::spanned::Spanned
     match ident {
         // Most important Item types that definitely implement Spanned

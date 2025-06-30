@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn_codegen::{Data, Definitions, Node, Punctuated, Type};
 
-use crate::{convert::EMPTY_STRUCTS, file, traverse};
+use crate::{convert::{EMPTY_STRUCTS, should_have_span}, file, traverse};
 
 const AST_ENUM_SRC: &str = "src/gen/ast_struct.rs";
 
@@ -213,28 +213,7 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
     }
 }
 
-// Determine if a type should have span information added (conservative list)
-fn should_have_span(ident: &str) -> bool {
-    // Only add spans to core types that are most likely to implement syn::spanned::Spanned
-    match ident {
-        // Most important Item types that definitely implement Spanned
-        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
-        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
-        // Most important Expression types that implement Spanned  
-        "ExprCall" | "ExprPath" | "ExprField" | "ExprMethodCall" | "ExprLit" |
-        "ExprBlock" | "ExprIf" | "ExprArray" | "ExprTuple" |
-        "ExprStruct" | "ExprBinary" | "ExprUnary" | "ExprAssign" |
-        // Core path and identifier types
-        "Path" | "PathSegment" | "Ident" |
-        // Statement types
-        "Local" |
-        // Pattern types that likely implement Spanned
-        "PatIdent" | "PatPath" | "PatStruct" | "PatTuple" |
-        // The root file type
-        "File" => true,
-        _ => false,
-    }
-}
+
 
 fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if SKIPPED.contains(&&*node.ident) || EMPTY_STRUCTS.contains(&&*node.ident) {
