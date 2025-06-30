@@ -1627,14 +1627,17 @@ impl From<&ImplRestriction> for syn::ImplRestriction {
 syn_trait_impl!(syn::Index);
 impl From<&syn::Index> for Index {
     fn from(node: &syn::Index) -> Self {
-        Self { index: node.index }
+        Self {
+            index: node.index,
+            span: node.span.ref_into(),
+        }
     }
 }
 impl From<&Index> for syn::Index {
     fn from(node: &Index) -> Self {
         Self {
             index: node.index,
-            span: proc_macro2::Span::call_site(),
+            span: node.span.ref_into(),
         }
     }
 }
@@ -2070,6 +2073,7 @@ syn_trait_impl!(syn::Lifetime);
 impl From<&syn::Lifetime> for Lifetime {
     fn from(node: &syn::Lifetime) -> Self {
         Self {
+            apostrophe: node.apostrophe.ref_into(),
             ident: node.ident.ref_into(),
         }
     }
@@ -2077,7 +2081,7 @@ impl From<&syn::Lifetime> for Lifetime {
 impl From<&Lifetime> for syn::Lifetime {
     fn from(node: &Lifetime) -> Self {
         Self {
-            apostrophe: proc_macro2::Span::call_site(),
+            apostrophe: node.apostrophe.ref_into(),
             ident: node.ident.ref_into(),
         }
     }
@@ -2136,14 +2140,17 @@ impl From<&Lit> for syn::Lit {
 syn_trait_impl!(syn::LitBool);
 impl From<&syn::LitBool> for LitBool {
     fn from(node: &syn::LitBool) -> Self {
-        Self { value: node.value }
+        Self {
+            value: node.value,
+            span: node.span.ref_into(),
+        }
     }
 }
 impl From<&LitBool> for syn::LitBool {
     fn from(node: &LitBool) -> Self {
         Self {
             value: node.value,
-            span: proc_macro2::Span::call_site(),
+            span: node.span.ref_into(),
         }
     }
 }

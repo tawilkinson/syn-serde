@@ -76,8 +76,8 @@ fn visit(ty: &Type, var: &TokenStream, defs: &Definitions) -> (Option<TokenStrea
             (from, into)
         }
         Type::Ext(t) if t == "Span" => {
-            let from = None;
-            let into = quote!(proc_macro2::Span::call_site());
+            let from = Some(quote!(#var.ref_into()));
+            let into = quote!(#var.ref_into());
             (from, into)
         }
         Type::Syn(t) if t == "Reserved" => {

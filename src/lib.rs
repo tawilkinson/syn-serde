@@ -261,6 +261,10 @@ pub use crate::token_stream::{
     Delimiter, Group, Ident, Literal, Punct, Spacing, TokenStream, TokenTree,
 };
 
+mod span;
+#[doc(hidden)]
+pub use crate::span::SpanInfo;
+
 #[cfg(feature = "json")]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
 pub mod json;

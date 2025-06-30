@@ -202,7 +202,7 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
             }
         },
         Type::Token(_) | Type::Group(_) => None,
-        Type::Ext(t) if t == "Span" => None,
+        Type::Ext(t) if t == "Span" => Some(quote!(SpanInfo)),
         Type::Syn(t) if t == "Reserved" => None,
         Type::Syn(t) if EMPTY_STRUCTS.contains(&&**t) => None,
         Type::Syn(t) | Type::Ext(t) | Type::Std(t) => {

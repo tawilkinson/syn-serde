@@ -582,9 +582,9 @@ pub struct ImplItemType {
 }
 /// An adapter for [`struct@syn::Index`].
 #[derive(Serialize, Deserialize)]
-#[serde(transparent)]
 pub struct Index {
     pub(crate) index: u32,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemConst`].
 #[derive(Serialize, Deserialize)]
@@ -770,8 +770,8 @@ pub struct Label {
 /// An adapter for [`struct@syn::Lifetime`].
 #[derive(Serialize, Deserialize)]
 #[derive(Clone)]
-#[serde(transparent)]
 pub struct Lifetime {
+    pub(crate) apostrophe: SpanInfo,
     pub(crate) ident: Ident,
 }
 /// An adapter for [`struct@syn::LifetimeParam`].
@@ -786,9 +786,9 @@ pub struct LifetimeParam {
 }
 /// An adapter for [`struct@syn::LitBool`].
 #[derive(Serialize, Deserialize)]
-#[serde(transparent)]
 pub struct LitBool {
     pub(crate) value: bool,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::Local`].
 #[derive(Serialize, Deserialize)]

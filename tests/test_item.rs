@@ -326,7 +326,17 @@ fn test_enum() {
                     ]
                   }
                 },
-                "index": 0
+                "index": {
+                  "index": 0,
+                  "span": {
+                    "start_offset": 0,
+                    "end_offset": 0,
+                    "start_line": 1,
+                    "start_column": 0,
+                    "end_line": 1,
+                    "end_column": 0
+                  }
+                }
               }
             }
           }
