@@ -79,3 +79,71 @@ fn test_literal_spans() {
         assert!(json_str.contains("start_line"));
     }
 }
+
+#[test]
+fn test_span_info_methods() {
+    use syn_serde::SpanInfo;
+    
+    // Test SpanInfo utility methods
+    let span_info = SpanInfo {
+        start_offset: 0,
+        end_offset: 0,
+        start_line: 2,
+        start_column: 10,
+        end_line: 2,
+        end_column: 15,
+    };
+    
+    // Test column length calculation
+    assert_eq!(span_info.column_length(), Some(5));
+    assert!(!span_info.is_point());
+    
+    // Test point span
+    let point_span = SpanInfo {
+        start_offset: 0,
+        end_offset: 0,
+        start_line: 1,
+        start_column: 5,
+        end_line: 1,
+        end_column: 5,
+    };
+    
+    assert!(point_span.is_point());
+    assert_eq!(point_span.column_length(), Some(0));
+    
+    // Test multi-line span
+    let multiline_span = SpanInfo {
+        start_offset: 0,
+        end_offset: 0,
+        start_line: 1,
+        start_column: 10,
+        end_line: 3,
+        end_column: 5,
+    };
+    
+    assert!(!multiline_span.is_point());
+    assert_eq!(multiline_span.column_length(), None);
+}
+
+#[test]
+fn test_span_roundtrip() {
+    // Test that we can serialize and deserialize spans through JSON
+    let code = r#"const VALUE: bool = false;"#;
+    
+    let original_file: syn::File = syn::parse_str(code).unwrap();
+    
+    // Convert to JSON and back
+    let json_str = json::to_string_pretty(&original_file);
+    let restored_file: syn::File = json::from_str(&json_str).unwrap();
+    
+    // Should have same structure
+    assert_eq!(original_file.items.len(), restored_file.items.len());
+    
+    // Check that specific elements match
+    if let (syn::Item::Const(orig), syn::Item::Const(rest)) = 
+        (&original_file.items[0], &restored_file.items[0]) {
+        assert_eq!(orig.ident.to_string(), rest.ident.to_string());
+    }
+    
+    println!("Roundtrip successful, JSON contains spans: {}", json_str.contains("span"));
+}

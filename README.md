@@ -86,6 +86,30 @@ and print out a JSON representation of the syntax tree.
 The [`json2rust`] example parse a JSON file into a `syn_serde::File` and
 print out a Rust syntax tree.
 
+## Location Information
+
+syn-serde preserves location information (spans) from the original source code. When serializing to JSON, span information is included for applicable AST nodes, providing line and column information:
+
+```json
+{
+  "lit": {
+    "bool": {
+      "value": true,
+      "span": {
+        "start_offset": 0,
+        "end_offset": 0,
+        "start_line": 1,
+        "start_column": 19,
+        "end_line": 1,
+        "end_column": 23
+      }
+    }
+  }
+}
+```
+
+This allows tools to map AST nodes back to their original source location. The `start_line` and `end_line` are 1-based, while `start_column` and `end_column` are 0-based.
+
 ## Optional features
 
 - **`json`** — Provides functions for JSON <-> Rust serializing and
