@@ -34,7 +34,7 @@ json = ["serde_json"]
 proc-macro2 = { version = "1.0.60", default-features = false, features = ["span-locations"] }
 serde = "1.0.113"
 serde_derive = "1.0.113"
-syn = { version = "2", default-features = false, features = ["full"] }
+syn = { version = "2", default-features = false, features = ["full", "parsing", "printing"] }
 
 serde_json = { version = "1", optional = true }
 

@@ -98,6 +98,7 @@ pub struct ExprArray {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) elems: Punctuated<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprAssign`].
 #[derive(Serialize, Deserialize)]
@@ -106,6 +107,7 @@ pub struct ExprAssign {
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) left: Box<Expr>,
     pub(crate) right: Box<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprAsync`].
 #[derive(Serialize, Deserialize)]
@@ -133,6 +135,7 @@ pub struct ExprBinary {
     pub(crate) left: Box<Expr>,
     pub(crate) op: BinOp,
     pub(crate) right: Box<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprBlock`].
 #[derive(Serialize, Deserialize)]
@@ -143,6 +146,7 @@ pub struct ExprBlock {
     pub(crate) label: Option<Label>,
     #[serde(rename = "stmts")]
     pub(crate) block: Block,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprBreak`].
 #[derive(Serialize, Deserialize)]
@@ -161,6 +165,7 @@ pub struct ExprCall {
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) func: Box<Expr>,
     pub(crate) args: Punctuated<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprCast`].
 #[derive(Serialize, Deserialize)]
@@ -218,6 +223,7 @@ pub struct ExprField {
     pub(crate) base: Box<Expr>,
     #[serde(flatten)]
     pub(crate) member: Member,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprForLoop`].
 #[derive(Serialize, Deserialize)]
@@ -246,6 +252,7 @@ pub struct ExprIf {
     pub(crate) then_branch: Block,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) else_branch: Option<Box<Expr>>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprIndex`].
 #[derive(Serialize, Deserialize)]
@@ -312,6 +319,7 @@ pub struct ExprMethodCall {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) turbofish: Option<AngleBracketedGenericArguments>,
     pub(crate) args: Punctuated<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprParen`].
 #[derive(Serialize, Deserialize)]
@@ -380,6 +388,7 @@ pub struct ExprStruct {
     pub(crate) dot2_token: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) rest: Option<Box<Expr>>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprTry`].
 #[derive(Serialize, Deserialize)]
@@ -402,6 +411,7 @@ pub struct ExprTuple {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) elems: Punctuated<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprUnary`].
 #[derive(Serialize, Deserialize)]
@@ -410,6 +420,7 @@ pub struct ExprUnary {
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) op: UnOp,
     pub(crate) expr: Box<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ExprUnsafe`].
 #[derive(Serialize, Deserialize)]
@@ -479,6 +490,7 @@ pub struct File {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) items: Vec<Item>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ForeignItemFn`].
 #[derive(Serialize, Deserialize)]
@@ -598,6 +610,7 @@ pub struct ItemConst {
     pub(crate) generics: Generics,
     pub(crate) ty: Box<Type>,
     pub(crate) expr: Box<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemEnum`].
 #[derive(Serialize, Deserialize)]
@@ -610,6 +623,7 @@ pub struct ItemEnum {
     #[serde(default, skip_serializing_if = "Generics::is_none")]
     pub(crate) generics: Generics,
     pub(crate) variants: Punctuated<Variant>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemExternCrate`].
 #[derive(Serialize, Deserialize)]
@@ -633,6 +647,7 @@ pub struct ItemFn {
     pub(crate) sig: Signature,
     #[serde(rename = "stmts")]
     pub(crate) block: Box<Block>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemForeignMod`].
 #[derive(Serialize, Deserialize)]
@@ -663,6 +678,7 @@ pub struct ItemImpl {
     pub(crate) trait_: Option<(bool, Path)>,
     pub(crate) self_ty: Box<Type>,
     pub(crate) items: Vec<ImplItem>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemMacro`].
 #[derive(Serialize, Deserialize)]
@@ -689,6 +705,7 @@ pub struct ItemStatic {
     pub(crate) ident: Ident,
     pub(crate) ty: Box<Type>,
     pub(crate) expr: Box<Expr>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemTrait`].
 #[derive(Serialize, Deserialize)]
@@ -713,6 +730,7 @@ pub struct ItemTrait {
     #[serde(default, skip_serializing_if = "Punctuated::is_empty")]
     pub(crate) supertraits: Punctuated<TypeParamBound>,
     pub(crate) items: Vec<TraitItem>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemTraitAlias`].
 #[derive(Serialize, Deserialize)]
@@ -737,6 +755,7 @@ pub struct ItemType {
     #[serde(default, skip_serializing_if = "Generics::is_none")]
     pub(crate) generics: Generics,
     pub(crate) ty: Box<Type>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::ItemUnion`].
 #[derive(Serialize, Deserialize)]
@@ -760,6 +779,7 @@ pub struct ItemUse {
     #[serde(default, skip_serializing_if = "not")]
     pub(crate) leading_colon: bool,
     pub(crate) tree: UseTree,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::Label`].
 #[derive(Serialize, Deserialize)]
@@ -798,6 +818,7 @@ pub struct Local {
     pub(crate) pat: Pat,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) init: Option<LocalInit>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::LocalInit`].
 #[derive(Serialize, Deserialize)]
@@ -847,6 +868,7 @@ pub struct PatIdent {
     pub(crate) ident: Ident,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) subpat: Option<Box<Pat>>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::PatParen`].
 #[derive(Serialize, Deserialize)]
@@ -889,6 +911,7 @@ pub struct PatStruct {
     pub(crate) fields: Punctuated<FieldPat>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) rest: Option<PatRest>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::PatTuple`].
 #[derive(Serialize, Deserialize)]
@@ -896,6 +919,7 @@ pub struct PatTuple {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) elems: Punctuated<Pat>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::PatTupleStruct`].
 #[derive(Serialize, Deserialize)]
@@ -927,6 +951,7 @@ pub struct Path {
     #[serde(default, skip_serializing_if = "not")]
     pub(crate) leading_colon: bool,
     pub(crate) segments: Punctuated<PathSegment>,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::PathSegment`].
 #[derive(Serialize, Deserialize)]
@@ -934,6 +959,7 @@ pub struct PathSegment {
     pub(crate) ident: Ident,
     #[serde(default, skip_serializing_if = "PathArguments::is_none")]
     pub(crate) arguments: PathArguments,
+    pub(crate) span: SpanInfo,
 }
 /// An adapter for [`struct@syn::PredicateLifetime`].
 #[derive(Serialize, Deserialize)]

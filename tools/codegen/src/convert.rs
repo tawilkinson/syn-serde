@@ -116,6 +116,37 @@ fn visit(ty: &Type, var: &TokenStream, defs: &Definitions) -> (Option<TokenStrea
     }
 }
 
+// Determine if a type should have span information added (conservative list)
+fn should_have_span(ident: &str) -> bool {
+    // Only add spans to core types that are most likely to implement syn::spanned::Spanned
+    match ident {
+        // Most important Item types that definitely implement Spanned
+        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
+        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
+        // Most important Expression types that implement Spanned  
+        "ExprCall" | "ExprPath" | "ExprField" | "ExprMethodCall" | "ExprLit" |
+        "ExprBlock" | "ExprIf" | "ExprArray" | "ExprTuple" |
+        "ExprStruct" | "ExprBinary" | "ExprUnary" | "ExprAssign" |
+        // Core path and identifier types
+        "Path" | "PathSegment" | "Ident" |
+        // Statement types
+        "Local" |
+        // Pattern types that likely implement Spanned
+        "PatIdent" | "PatPath" | "PatStruct" | "PatTuple" |
+        // The root file type
+        "File" => true,
+        _ => false,
+    }
+}
+
+// Helper function to get base type string (similar to ast_struct.rs)
+fn base_ty_str(ty: &Type) -> Option<&str> {
+    match ty {
+        Type::Syn(ty) | Type::Ext(ty) | Type::Std(ty) => Some(ty),
+        _ => None,
+    }
+}
+
 fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if IGNORED_TYPES.contains(&&*node.ident) || EMPTY_STRUCTS.contains(&&*node.ident) {
         return;
@@ -199,8 +230,13 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
         Data::Struct(fields) => {
             let mut from_fields = TokenStream::new();
             let mut into_fields = TokenStream::new();
+            let mut has_existing_span = false;
 
+            // Process existing fields
             for (field, ty) in fields {
+                if field == "span" {
+                    has_existing_span = true;
+                }
                 let field = format_ident!("{field}");
                 let ref_tokens = quote!(node.#field);
 
@@ -210,6 +246,64 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                     from_fields.extend(quote!(#field: #from,));
                 }
                 into_fields.extend(quote!(#field: #into,));
+            }
+            
+            // Add span field conversion if the type should have one and doesn't already
+            if should_have_span(&node.ident) && !has_existing_span {
+                // Check if this type has any flattened fields that might already have spans
+                let has_flattened_spannable = fields.iter().any(|(field, ty)| {
+                    // Using the same flatten logic as ast_struct.rs
+                    let is_flattened = match (field.as_str(), base_ty_str(ty)) {
+                        ("member", Some("Member")) | ("mac", Some("Macro")) | ("sig", Some("Signature")) => true,
+                        ("lit", Some("Lit")) => node.ident.ends_with("Lit"),
+                        ("path", Some("Path")) => node.ident.ends_with("Path"),
+                        _ => false,
+                    };
+                    
+                    is_flattened && match (field.as_str(), base_ty_str(ty)) {
+                        ("path", Some("Path")) => true, // Path has spans
+                        ("lit", Some("Lit")) => true,   // Lit can have spans 
+                        _ => false,
+                    }
+                });
+                
+                if !has_flattened_spannable {
+                    // For from conversion (syn -> syn-serde), extract span intelligently
+                    let span_expr = match node.ident.as_str() {
+                        // Types that implement Spanned directly
+                        "ExprLit" | "ExprPath" | "File" => quote!(node.span()),
+                        // Item types - need to be more specific about their structure
+                        "ItemFn" => quote!(node.sig.ident.span()),
+                        "ItemEnum" | "ItemConst" | "ItemStatic" | 
+                        "ItemTrait" | "ItemType" => quote!(node.ident.span()),
+                        "ItemImpl" => quote!(node.impl_token.span()),
+                        "ItemUse" => quote!(node.use_token.span()),
+                        // Expression types - use various strategies
+                        "ExprCall" => quote!(node.func.span()),
+                        "ExprField" => quote!(node.member.span()),
+                        "ExprMethodCall" => quote!(node.method.span()),
+                        "ExprStruct" => quote!(node.path.span()),
+                        "ExprArray" => quote!(node.bracket_token.span.join()),
+                        "ExprTuple" => quote!(node.paren_token.span.join()),
+                        "ExprBinary" => quote!(node.op.span()),
+                        "ExprUnary" => quote!(node.op.span()),
+                        "ExprAssign" => quote!(node.left.span()),
+                        "ExprBlock" => quote!(node.block.brace_token.span.join()),
+                        "ExprIf" => quote!(node.if_token.span()),
+                        // Pattern types
+                        "PatIdent" => quote!(node.ident.span()),
+                        "PatPath" | "PatStruct" | "PatTuple" => quote!(proc_macro2::Span::call_site()),
+                        // Path types  
+                        "Path" => quote!(if node.segments.is_empty() { proc_macro2::Span::call_site() } else { node.segments.first().unwrap().ident.span() }),
+                        "PathSegment" => quote!(node.ident.span()),
+                        // Core types
+                        "Ident" => quote!(node.span()),
+                        "Local" => quote!(node.pat.span()),
+                        // Fallback for any other types
+                        _ => quote!(proc_macro2::Span::call_site()),
+                    };
+                    from_fields.extend(quote!(span: crate::SpanInfo::from_span(#span_expr),));
+                }
             }
 
             assert!(!fields.is_empty(), "fields.is_empty: {ident}");
@@ -252,6 +346,7 @@ pub(crate) fn generate(defs: &Definitions) {
         )]
 
         use crate::*;
+        use syn::spanned::Spanned;
 
         #impls
     })

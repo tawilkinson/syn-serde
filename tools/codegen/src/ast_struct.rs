@@ -213,6 +213,29 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
     }
 }
 
+// Determine if a type should have span information added (conservative list)
+fn should_have_span(ident: &str) -> bool {
+    // Only add spans to core types that are most likely to implement syn::spanned::Spanned
+    match ident {
+        // Most important Item types that definitely implement Spanned
+        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
+        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
+        // Most important Expression types that implement Spanned  
+        "ExprCall" | "ExprPath" | "ExprField" | "ExprMethodCall" | "ExprLit" |
+        "ExprBlock" | "ExprIf" | "ExprArray" | "ExprTuple" |
+        "ExprStruct" | "ExprBinary" | "ExprUnary" | "ExprAssign" |
+        // Core path and identifier types
+        "Path" | "PathSegment" | "Ident" |
+        // Statement types
+        "Local" |
+        // Pattern types that likely implement Spanned
+        "PatIdent" | "PatPath" | "PatStruct" | "PatTuple" |
+        // The root file type
+        "File" => true,
+        _ => false,
+    }
+}
+
 fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if SKIPPED.contains(&&*node.ident) || EMPTY_STRUCTS.contains(&&*node.ident) {
         return;
@@ -221,7 +244,13 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if let Data::Struct(fields) = &node.data {
         let mut body = vec![];
         let mut last = "";
+        let mut has_existing_span = false;
+        
+        // Process existing fields
         for (field, ty) in fields {
+            if field == "span" {
+                has_existing_span = true;
+            }
             if let Some(t) = format_ty(ty) {
                 let attrs = field_attrs(field, ty, defs);
                 let rename = rename(&node.ident, field).map(|s| quote!(#[serde(rename = #s)]));
@@ -244,8 +273,26 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                 last = &**field;
             }
         }
+        
+        // Add span field if the type should have one and doesn't already
+        if should_have_span(&node.ident) && !has_existing_span {
+            // Check if this type has any flattened fields that might already have spans
+            let has_flattened_spannable = fields.iter().any(|(field, ty)| {
+                flatten(&node.ident, field, ty) && match (field.as_str(), base_ty(ty)) {
+                    ("path", Some("Path")) => true, // Path has spans
+                    ("lit", Some("Lit")) => true,   // Lit can have spans 
+                    _ => false,
+                }
+            });
+            
+            if !has_flattened_spannable {
+                body.push(quote! {
+                    pub(crate) span: SpanInfo,
+                });
+            }
+        }
 
-        let transparent = if body.len() == 1 && allow_transparent(&node.ident, last, &fields[last])
+        let transparent = if body.len() == 1 && !should_have_span(&node.ident) && allow_transparent(&node.ident, last, &fields[last])
         {
             Some(quote!(#[serde(transparent)]))
         } else {
