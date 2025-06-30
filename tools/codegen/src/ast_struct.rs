@@ -287,7 +287,8 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
             
             if !has_flattened_spannable {
                 body.push(quote! {
-                    pub(crate) span: SpanInfo,
+                    #[serde(default, skip_serializing_if = "Option::is_none")]
+                    pub(crate) span: Option<SpanInfo>,
                 });
             }
         }

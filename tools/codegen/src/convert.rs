@@ -302,7 +302,7 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                         // Fallback for any other types
                         _ => quote!(proc_macro2::Span::call_site()),
                     };
-                    from_fields.extend(quote!(span: crate::SpanInfo::from_span(#span_expr),));
+                    from_fields.extend(quote!(span: Some(crate::SpanInfo::from_span(#span_expr)),));
                 }
             }
 

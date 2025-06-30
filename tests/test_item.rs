@@ -589,3 +589,18 @@ fn test_static_mut() {
     let json = Item::from(&json);
     assert_eq!(json, actual);
 }
+#[test]
+fn test_backward_compatibility() {
+    // Test that JSON without spans still deserializes correctly
+    let json_without_spans = r#"
+    {
+      "struct": {
+        "ident": "Unit",
+        "fields": "unit"
+      }
+    }
+    "#;
+    
+    let _parsed: syn_serde::Item = serde_json::from_str(json_without_spans).unwrap();
+    println!("Backward compatibility test passed - JSON without spans can still be parsed!");
+}
