@@ -61,9 +61,10 @@ pub struct BareVariadic {
 }
 /// An adapter for [`struct@syn::Block`].
 #[derive(Serialize, Deserialize)]
-#[serde(transparent)]
 pub struct Block {
     pub(crate) stmts: Vec<Stmt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) span: Option<SpanInfo>,
 }
 /// An adapter for [`struct@syn::BoundLifetimes`].
 #[derive(Serialize, Deserialize)]

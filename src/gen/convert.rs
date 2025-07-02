@@ -235,6 +235,7 @@ impl From<&syn::Block> for Block {
     fn from(node: &syn::Block) -> Self {
         Self {
             stmts: node.stmts.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.brace_token.span.join())),
         }
     }
 }

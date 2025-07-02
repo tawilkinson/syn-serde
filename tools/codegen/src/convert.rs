@@ -133,6 +133,8 @@ pub(crate) fn should_have_span(ident: &str) -> bool {
         "Local" |
         // Pattern types that likely implement Spanned
         "PatIdent" | "PatPath" | "PatStruct" | "PatTuple" |
+        // Block type - for function bodies, if blocks, etc.
+        "Block" |
         // The root file type
         "File" => true,
         _ => false,
@@ -290,6 +292,8 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                         "ExprAssign" => quote!(node.left.span()),
                         "ExprBlock" => quote!(node.block.brace_token.span.join()),
                         "ExprIf" => quote!(node.if_token.span()),
+                        // Block type - extract span from brace tokens
+                        "Block" => quote!(node.brace_token.span.join()),
                         // Pattern types
                         "PatIdent" => quote!(node.ident.span()),
                         "PatPath" | "PatStruct" | "PatTuple" => quote!(proc_macro2::Span::call_site()),
