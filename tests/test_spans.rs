@@ -147,3 +147,54 @@ fn test_span_roundtrip() {
     
     println!("Roundtrip successful, JSON contains spans: {}", json_str.contains("span"));
 }
+
+#[test]
+fn test_block_spans() {
+    // Test that function body blocks have span information
+    // This specifically tests the fix for capturing block positions
+    let code = r#"
+fn foo() // Line 2
+
+         { // Line 4, Column 10
+
+
+
+
+
+         } // Line 10, Column 10
+"#;
+
+    let syn_file: syn::File = syn::parse_str(code).unwrap();
+    let json_str = json::to_string_pretty(&syn_file);
+    
+    println!("Block span test JSON:\n{}", json_str);
+    
+    // Verify we have spans for both the function and its block
+    assert!(json_str.contains("span"), "Should have span information");
+    
+    // Parse JSON to verify structure
+    let json_value: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    
+    // Navigate to the function item
+    let items = json_value["items"].as_array().unwrap();
+    let fn_item = &items[0]["fn"];
+    
+    // Should have span for the function identifier
+    assert!(fn_item["span"].is_object(), "Function should have span");
+    
+    // Should have span for the function block body
+    // The stmts field is now a Block object with its own span
+    let block = &fn_item["stmts"];
+    assert!(block["span"].is_object(), "Function block should have span");
+    
+    // Verify the block span captures the brace positions correctly
+    let block_span = &block["span"];
+    assert_eq!(block_span["start_line"], 4, "Block should start at line 4");
+    assert_eq!(block_span["start_column"], 9, "Block should start at column 9");
+    assert_eq!(block_span["end_line"], 10, "Block should end at line 10");
+    assert_eq!(block_span["end_column"], 10, "Block should end at column 10");
+    
+    // Verify that JSON round-trips correctly
+    let restored_file: syn::File = json::from_str(&json_str).unwrap();
+    assert_eq!(syn_file.items.len(), restored_file.items.len());
+}
