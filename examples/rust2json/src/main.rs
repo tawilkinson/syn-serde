@@ -5,8 +5,6 @@ use std::{
     io::{self, BufWriter, Write as _},
 };
 
-use syn_serde::json;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let (input_path, output_path) = match &*args {
@@ -19,14 +17,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let code = fs::read_to_string(input_path)?;
-    let syntax = syn::parse_file(&code)?;
+    let syn_file = syn::parse_file(&code)?;
+    
+    // Create syn-serde File with comments extracted from source
+    let syntax = syn_serde::File::from_syn_with_comments(&syn_file, &code);
 
     if let Some(output_path) = output_path {
-        let buf = json::to_string_pretty(&syntax);
+        let buf = serde_json::to_string_pretty(&syntax)?;
         fs::write(output_path, buf)?;
     } else {
         let mut stdout = BufWriter::new(io::stdout().lock()); // Buffered because it is written with newline many times.
-        json::to_writer_pretty(&mut stdout, &syntax)?;
+        serde_json::to_writer_pretty(&mut stdout, &syntax)?;
         stdout.flush()?;
     }
     Ok(())

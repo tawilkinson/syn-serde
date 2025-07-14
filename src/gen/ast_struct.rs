@@ -502,6 +502,8 @@ pub struct File {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) items: Vec<Item>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
 }

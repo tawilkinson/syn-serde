@@ -173,6 +173,20 @@ pub use crate::expr::{
 
 mod file {
     pub use crate::ast_struct::File;
+    
+    impl File {
+        /// Create a File from a syn::File and source code, extracting comments.
+        pub fn from_syn_with_comments(syn_file: &syn::File, source: &str) -> Self {
+            let mut file = Self::from(syn_file);
+            file.comments = crate::comment::extract_comments(source);
+            file
+        }
+        
+        /// Get the comments associated with this file.
+        pub fn comments(&self) -> &[crate::Comment] {
+            &self.comments
+        }
+    }
 }
 #[doc(hidden)]
 pub use crate::file::File;
@@ -264,6 +278,10 @@ pub use crate::token_stream::{
 mod span;
 #[doc(hidden)]
 pub use crate::span::SpanInfo;
+
+mod comment;
+#[doc(hidden)]
+pub use crate::comment::{Comment, CommentKind};
 
 #[cfg(feature = "json")]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]

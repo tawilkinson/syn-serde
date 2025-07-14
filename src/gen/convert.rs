@@ -1295,6 +1295,7 @@ impl From<&syn::File> for File {
             shebang: node.shebang.map_into(),
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
+            comments: Vec::new(), // Will be populated separately
             span: Some(crate::SpanInfo::from_span(node.span())),
         }
     }
@@ -1305,6 +1306,7 @@ impl From<&File> for syn::File {
             shebang: node.shebang.map_into(),
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
+            // Comments are not part of syn::File, they're handled separately
         }
     }
 }
