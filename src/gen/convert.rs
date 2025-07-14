@@ -236,6 +236,7 @@ impl From<&syn::Block> for Block {
         Self {
             stmts: node.stmts.map_into(),
             span: Some(crate::SpanInfo::from_span(node.brace_token.span.join())),
+            comments: vec![],
         }
     }
 }
@@ -449,6 +450,7 @@ impl From<&syn::ExprAsync> for ExprAsync {
             attrs: node.attrs.map_into(),
             capture: node.capture.is_some(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -511,6 +513,7 @@ impl From<&syn::ExprBlock> for ExprBlock {
             label: node.label.map_into(),
             block: node.block.ref_into(),
             span: Some(crate::SpanInfo::from_span(node.block.brace_token.span.join())),
+            comments: vec![],
         }
     }
 }
@@ -623,6 +626,7 @@ impl From<&syn::ExprConst> for ExprConst {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -683,6 +687,7 @@ impl From<&syn::ExprForLoop> for ExprForLoop {
             pat: node.pat.map_into(),
             expr: node.expr.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -726,6 +731,7 @@ impl From<&syn::ExprIf> for ExprIf {
             then_branch: node.then_branch.ref_into(),
             else_branch: node.else_branch.ref_map(|(_0, _1)| (*_1).map_into()),
             span: Some(crate::SpanInfo::from_span(node.if_token.span())),
+            comments: vec![],
         }
     }
 }
@@ -821,6 +827,7 @@ impl From<&syn::ExprLoop> for ExprLoop {
             attrs: node.attrs.map_into(),
             label: node.label.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1045,6 +1052,7 @@ impl From<&syn::ExprTryBlock> for ExprTryBlock {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1102,6 +1110,7 @@ impl From<&syn::ExprUnsafe> for ExprUnsafe {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1122,6 +1131,7 @@ impl From<&syn::ExprWhile> for ExprWhile {
             label: node.label.map_into(),
             cond: node.cond.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1295,7 +1305,6 @@ impl From<&syn::File> for File {
             shebang: node.shebang.map_into(),
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
-            comments: Vec::new(), // Will be populated separately
             span: Some(crate::SpanInfo::from_span(node.span())),
         }
     }
@@ -1306,7 +1315,6 @@ impl From<&File> for syn::File {
             shebang: node.shebang.map_into(),
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
-            // Comments are not part of syn::File, they're handled separately
         }
     }
 }
@@ -1714,6 +1722,7 @@ impl From<&syn::ItemConst> for ItemConst {
             ty: node.ty.map_into(),
             expr: node.expr.map_into(),
             span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1743,6 +1752,7 @@ impl From<&syn::ItemEnum> for ItemEnum {
             generics: node.generics.ref_into(),
             variants: node.variants.map_into(),
             span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1792,6 +1802,7 @@ impl From<&syn::ItemFn> for ItemFn {
             sig: node.sig.ref_into(),
             block: node.block.map_into(),
             span: Some(crate::SpanInfo::from_span(node.sig.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1813,6 +1824,7 @@ impl From<&syn::ItemForeignMod> for ItemForeignMod {
             unsafety: node.unsafety.is_some(),
             abi: node.abi.ref_into(),
             items: node.items.map_into(),
+            comments: vec![],
         }
     }
 }
@@ -1841,6 +1853,7 @@ impl From<&syn::ItemImpl> for ItemImpl {
             self_ty: node.self_ty.map_into(),
             items: node.items.map_into(),
             span: Some(crate::SpanInfo::from_span(node.impl_token.span())),
+            comments: vec![],
         }
     }
 }
@@ -1923,6 +1936,7 @@ impl From<&syn::ItemStatic> for ItemStatic {
             ty: node.ty.map_into(),
             expr: node.expr.map_into(),
             span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1957,6 +1971,7 @@ impl From<&syn::ItemTrait> for ItemTrait {
             supertraits: node.supertraits.map_into(),
             items: node.items.map_into(),
             span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -2014,6 +2029,7 @@ impl From<&syn::ItemType> for ItemType {
             generics: node.generics.ref_into(),
             ty: node.ty.map_into(),
             span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -2040,6 +2056,7 @@ impl From<&syn::ItemUnion> for ItemUnion {
             ident: node.ident.ref_into(),
             generics: node.generics.ref_into(),
             fields: node.fields.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -2064,6 +2081,7 @@ impl From<&syn::ItemUse> for ItemUse {
             leading_colon: node.leading_colon.is_some(),
             tree: node.tree.ref_into(),
             span: Some(crate::SpanInfo::from_span(node.use_token.span())),
+            comments: vec![],
         }
     }
 }

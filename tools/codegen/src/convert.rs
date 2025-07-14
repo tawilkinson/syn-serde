@@ -116,6 +116,25 @@ fn visit(ty: &Type, var: &TokenStream, defs: &Definitions) -> (Option<TokenStrea
     }
 }
 
+// Determine if a type should have comments attached to it  
+pub(crate) fn should_have_comments(ident: &str) -> bool {
+    // Add comments to major structural elements that users typically comment
+    // Only include types that actually have comments fields in the generated code
+    match ident {
+        // Item types that have comments fields
+        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
+        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
+        "ItemUnion" | "ItemForeignMod" |
+        // Block types that can have comments
+        "Block" | "ExprBlock" | "ExprIf" | "ExprLoop" | "ExprWhile" |
+        "ExprForLoop" | "ExprMatch" | "ExprTryBlock" | "ExprUnsafe" |
+        "ExprAsync" | "ExprConst" => true,
+        // Exclude types that don't have comments fields:
+        // ItemStruct, ItemMod, ItemTraitAlias, ItemMacro, ItemExternCrate  
+        _ => false,
+    }
+}
+
 // Determine if a type should have span information added (conservative list)
 pub(crate) fn should_have_span(ident: &str) -> bool {
     // Only add spans to core types that are most likely to implement syn::spanned::Spanned
@@ -308,6 +327,11 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                     };
                     from_fields.extend(quote!(span: Some(crate::SpanInfo::from_span(#span_expr)),));
                 }
+            }
+            
+            // Add comments field if the type should have comments
+            if should_have_comments(&node.ident) {
+                from_fields.extend(quote!(comments: vec![],));
             }
 
             assert!(!fields.is_empty(), "fields.is_empty: {ident}");

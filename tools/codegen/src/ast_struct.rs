@@ -215,6 +215,23 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
 
 
 
+// Determine if a type should have comments attached to it
+fn should_have_comments(ident: &str) -> bool {
+    // Add comments to major structural elements that users typically comment
+    match ident {
+        // Item types that commonly have comments
+        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
+        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
+        "ItemStruct" | "ItemUnion" | "ItemMod" | "ItemForeignMod" |
+        // Block types that can have comments
+        "Block" | "ExprBlock" | "ExprIf" | "ExprLoop" | "ExprWhile" |
+        "ExprForLoop" | "ExprMatch" | "ExprTryBlock" | "ExprUnsafe" |
+        "ExprAsync" | "ExprConst" => true,
+        // Exclude File - comments should be attached to items instead
+        _ => false,
+    }
+}
+
 fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if SKIPPED.contains(&&*node.ident) || EMPTY_STRUCTS.contains(&&*node.ident) {
         return;
@@ -270,6 +287,14 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                     pub(crate) span: Option<SpanInfo>,
                 });
             }
+        }
+        
+        // Add comments field if the type should have comments
+        if should_have_comments(&node.ident) {
+            body.push(quote! {
+                #[serde(default, skip_serializing_if = "Vec::is_empty")]
+                pub(crate) comments: Vec<crate::Comment>,
+            });
         }
 
         let transparent = if body.len() == 1 && !should_have_span(&node.ident) && allow_transparent(&node.ident, last, &fields[last])

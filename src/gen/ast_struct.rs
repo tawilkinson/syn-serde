@@ -65,6 +65,8 @@ pub struct Block {
     pub(crate) stmts: Vec<Stmt>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::BoundLifetimes`].
 #[derive(Serialize, Deserialize)]
@@ -122,6 +124,8 @@ pub struct ExprAsync {
     pub(crate) capture: bool,
     #[serde(rename = "stmts")]
     pub(crate) block: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprAwait`].
 #[derive(Serialize, Deserialize)]
@@ -152,6 +156,8 @@ pub struct ExprBlock {
     pub(crate) block: Block,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprBreak`].
 #[derive(Serialize, Deserialize)]
@@ -212,6 +218,8 @@ pub struct ExprConst {
     pub(crate) attrs: Vec<Attribute>,
     #[serde(rename = "stmts")]
     pub(crate) block: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprContinue`].
 #[derive(Serialize, Deserialize)]
@@ -242,6 +250,8 @@ pub struct ExprForLoop {
     pub(crate) pat: Box<Pat>,
     pub(crate) expr: Box<Expr>,
     pub(crate) body: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprGroup`].
 #[derive(Serialize, Deserialize)]
@@ -261,6 +271,8 @@ pub struct ExprIf {
     pub(crate) else_branch: Option<Box<Expr>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprIndex`].
 #[derive(Serialize, Deserialize)]
@@ -300,6 +312,8 @@ pub struct ExprLoop {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) label: Option<Label>,
     pub(crate) body: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprMacro`].
 #[derive(Serialize, Deserialize)]
@@ -316,6 +330,8 @@ pub struct ExprMatch {
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) expr: Box<Expr>,
     pub(crate) arms: Vec<Arm>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprMethodCall`].
 #[derive(Serialize, Deserialize)]
@@ -414,6 +430,8 @@ pub struct ExprTryBlock {
     pub(crate) attrs: Vec<Attribute>,
     #[serde(rename = "stmts")]
     pub(crate) block: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprTuple`].
 #[derive(Serialize, Deserialize)]
@@ -441,6 +459,8 @@ pub struct ExprUnsafe {
     pub(crate) attrs: Vec<Attribute>,
     #[serde(rename = "stmts")]
     pub(crate) block: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprWhile`].
 #[derive(Serialize, Deserialize)]
@@ -451,6 +471,8 @@ pub struct ExprWhile {
     pub(crate) label: Option<Label>,
     pub(crate) cond: Box<Expr>,
     pub(crate) body: Block,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ExprYield`].
 #[derive(Serialize, Deserialize)]
@@ -502,8 +524,6 @@ pub struct File {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) items: Vec<Item>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub(crate) comments: Vec<crate::Comment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
 }
@@ -627,6 +647,8 @@ pub struct ItemConst {
     pub(crate) expr: Box<Expr>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemEnum`].
 #[derive(Serialize, Deserialize)]
@@ -641,6 +663,8 @@ pub struct ItemEnum {
     pub(crate) variants: Punctuated<Variant>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemExternCrate`].
 #[derive(Serialize, Deserialize)]
@@ -666,6 +690,8 @@ pub struct ItemFn {
     pub(crate) block: Box<Block>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemForeignMod`].
 #[derive(Serialize, Deserialize)]
@@ -677,6 +703,8 @@ pub struct ItemForeignMod {
     pub(crate) unsafety: bool,
     pub(crate) abi: Abi,
     pub(crate) items: Vec<ForeignItem>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemImpl`].
 #[derive(Serialize, Deserialize)]
@@ -698,6 +726,8 @@ pub struct ItemImpl {
     pub(crate) items: Vec<ImplItem>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemMacro`].
 #[derive(Serialize, Deserialize)]
@@ -726,6 +756,8 @@ pub struct ItemStatic {
     pub(crate) expr: Box<Expr>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemTrait`].
 #[derive(Serialize, Deserialize)]
@@ -752,6 +784,8 @@ pub struct ItemTrait {
     pub(crate) items: Vec<TraitItem>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemTraitAlias`].
 #[derive(Serialize, Deserialize)]
@@ -778,6 +812,8 @@ pub struct ItemType {
     pub(crate) ty: Box<Type>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemUnion`].
 #[derive(Serialize, Deserialize)]
@@ -790,6 +826,8 @@ pub struct ItemUnion {
     #[serde(default, skip_serializing_if = "Generics::is_none")]
     pub(crate) generics: Generics,
     pub(crate) fields: FieldsNamed,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ItemUse`].
 #[derive(Serialize, Deserialize)]
@@ -803,6 +841,8 @@ pub struct ItemUse {
     pub(crate) tree: UseTree,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::Label`].
 #[derive(Serialize, Deserialize)]
