@@ -31,23 +31,29 @@ pub(crate) fn associate_comments_with_nodes(
 /// Find the best AST node to associate a comment with.
 /// 
 /// The algorithm works as follows:
-/// 1. If the comment is on the same line as a node, associate it with that node
+/// 1. If the comment is on the same line as a node and within its bounds, associate it with that node
 /// 2. If the comment is immediately before a node (line before), associate it with that node
 /// 3. If the comment is inside a block or immediately after a node, associate it with that node
 /// 4. Otherwise, find the nearest enclosing node
 fn find_best_node_for_comment(comment: &Comment, node_spans: &[(String, SpanInfo)]) -> Option<String> {
     let comment_line = comment.span.start_line;
-    let _comment_column = comment.span.start_column;
+    let comment_column = comment.span.start_column;
     
     // First pass: look for nodes on the same line
     for (node_id, node_span) in node_spans {
         if comment_line == node_span.start_line {
             // Comment is on the same line as the node start
-            return Some(node_id.clone());
+            // Only associate if comment is after the node start (not before)
+            if comment_column >= node_span.start_column {
+                return Some(node_id.clone());
+            }
         }
         if comment_line == node_span.end_line {
             // Comment is on the same line as the node end
-            return Some(node_id.clone());
+            // Only associate if comment is before the node end (inside the node)
+            if comment_column < node_span.end_column {
+                return Some(node_id.clone());
+            }
         }
     }
     
@@ -214,5 +220,44 @@ mod tests {
         assert!(associations.contains_key("block_body"));
         assert_eq!(associations["block_body"].len(), 1);
         assert_eq!(associations["block_body"][0].text, "Line 4, Column 10");
+    }
+    
+    #[test]
+    fn test_comment_outside_node_scope_not_associated() {
+        let comment = Comment {
+            text: "Line 10, Column 10 - after function".to_string(),
+            span: SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 10,
+                start_column: 11, // Comment starts after the closing brace
+                end_line: 10,
+                end_column: 50,
+            },
+            kind: CommentKind::Line,
+        };
+        
+        let node_spans = vec![
+            ("fn_foo".to_string(), SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 2,
+                start_column: 3,
+                end_line: 2,
+                end_column: 6,
+            }),
+            ("block_body".to_string(), SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 4,
+                start_column: 9,
+                end_line: 10,
+                end_column: 10, // Block ends at column 10
+            }),
+        ];
+        
+        let associations = associate_comments_with_nodes(&[comment], &node_spans);
+        // Comment should not be associated with any node since it's outside their scope
+        assert_eq!(associations.len(), 0);
     }
 }
