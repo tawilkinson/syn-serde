@@ -172,7 +172,192 @@ pub use crate::expr::{
 };
 
 mod file {
+    use std::collections::HashMap;
     pub use crate::ast_struct::File;
+    
+    impl File {
+        /// Create a File from a syn::File and source code, distributing comments to appropriate AST nodes.
+        pub fn from_syn_with_comments(syn_file: &syn::File, source: &str) -> Self {
+            // First, create the basic file structure
+            let mut file = Self::from(syn_file);
+            
+            // Extract comments from the source code
+            let comments = crate::comment::extract_comments(source);
+            
+            // Associate comments with AST nodes
+            let comment_associations = associate_comments_with_file_nodes(&comments, &file);
+            
+            // Apply the comment associations to the file structure
+            apply_comment_associations(&mut file, comment_associations);
+            
+            file
+        }
+    }
+    
+    /// Associate comments with AST nodes in a file
+    fn associate_comments_with_file_nodes(
+        comments: &[crate::Comment],
+        file: &File,
+    ) -> HashMap<String, Vec<crate::Comment>> {
+        let mut node_spans = Vec::new();
+        
+        // Collect spans from all items in the file
+        for (i, item) in file.items.iter().enumerate() {
+            collect_item_spans(item, &format!("item_{}", i), &mut node_spans);
+        }
+        
+        // Associate comments with nodes
+        crate::comment_association::associate_comments_with_nodes(comments, &node_spans)
+    }
+    
+    /// Collect span information from an item and its children
+    fn collect_item_spans(item: &crate::Item, item_id: &str, spans: &mut Vec<(String, crate::SpanInfo)>) {
+        // Add span information for different item types
+        match item {
+            crate::Item::Fn(item_fn) => {
+                if let Some(span) = &item_fn.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+                // Add block span if present
+                if let Some(block_span) = &item_fn.block.span {
+                    spans.push((format!("{}_block", item_id), block_span.clone()));
+                }
+            }
+            crate::Item::Enum(item_enum) => {
+                if let Some(span) = &item_enum.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Struct(_item_struct) => {
+                // ItemStruct doesn't have span in the current implementation
+            }
+            crate::Item::Trait(item_trait) => {
+                if let Some(span) = &item_trait.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Impl(item_impl) => {
+                if let Some(span) = &item_impl.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Use(item_use) => {
+                if let Some(span) = &item_use.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Const(item_const) => {
+                if let Some(span) = &item_const.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Static(item_static) => {
+                if let Some(span) = &item_static.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Type(item_type) => {
+                if let Some(span) = &item_type.span {
+                    spans.push((item_id.to_string(), span.clone()));
+                }
+            }
+            crate::Item::Union(_item_union) => {
+                // ItemUnion doesn't have span in the current implementation
+            }
+            crate::Item::Mod(_item_mod) => {
+                // ItemMod doesn't have span in the current implementation
+            }
+            crate::Item::ForeignMod(_item_foreign_mod) => {
+                // ItemForeignMod doesn't have span in the current implementation
+            }
+            crate::Item::TraitAlias(_item_trait_alias) => {
+                // ItemTraitAlias doesn't have span in the current implementation
+            }
+            crate::Item::Macro(_item_macro) => {
+                // ItemMacro doesn't have span in the current implementation
+            }
+            crate::Item::ExternCrate(_item_extern_crate) => {
+                // ItemExternCrate doesn't have span in the current implementation
+            }
+            crate::Item::Verbatim(_) => {
+                // Verbatim items don't have spans
+            }
+        }
+    }
+    
+    /// Apply comment associations to the file structure
+    fn apply_comment_associations(file: &mut File, associations: HashMap<String, Vec<crate::Comment>>) {
+        for (i, item) in file.items.iter_mut().enumerate() {
+            let item_id = format!("item_{}", i);
+            
+            // Apply comments to the item
+            if let Some(comments) = associations.get(&item_id) {
+                apply_comments_to_item(item, comments.clone());
+            }
+            
+            // Apply comments to the item's block if it's a function
+            if let crate::Item::Fn(item_fn) = item {
+                let block_id = format!("{}_block", item_id);
+                if let Some(comments) = associations.get(&block_id) {
+                    item_fn.block.comments = comments.clone();
+                }
+            }
+        }
+    }
+    
+    /// Apply comments to a specific item
+    fn apply_comments_to_item(item: &mut crate::Item, comments: Vec<crate::Comment>) {
+        match item {
+            crate::Item::Fn(item_fn) => {
+                item_fn.comments = comments;
+            }
+            crate::Item::Enum(item_enum) => {
+                item_enum.comments = comments;
+            }
+            crate::Item::Struct(_item_struct) => {
+                // ItemStruct doesn't have comments field
+            }
+            crate::Item::Trait(item_trait) => {
+                item_trait.comments = comments;
+            }
+            crate::Item::Impl(item_impl) => {
+                item_impl.comments = comments;
+            }
+            crate::Item::Use(item_use) => {
+                item_use.comments = comments;
+            }
+            crate::Item::Const(item_const) => {
+                item_const.comments = comments;
+            }
+            crate::Item::Static(item_static) => {
+                item_static.comments = comments;
+            }
+            crate::Item::Type(item_type) => {
+                item_type.comments = comments;
+            }
+            crate::Item::Union(item_union) => {
+                item_union.comments = comments;
+            }
+            crate::Item::Mod(_item_mod) => {
+                // ItemMod doesn't have comments field
+            }
+            crate::Item::ForeignMod(item_foreign_mod) => {
+                item_foreign_mod.comments = comments;
+            }
+            crate::Item::TraitAlias(_item_trait_alias) => {
+                // ItemTraitAlias doesn't have comments field
+            }
+            crate::Item::Macro(_item_macro) => {
+                // ItemMacro doesn't have comments field
+            }
+            crate::Item::ExternCrate(_item_extern_crate) => {
+                // ItemExternCrate doesn't have comments field
+            }
+            crate::Item::Verbatim(_) => {
+                // Can't attach comments to verbatim items
+            }
+        }
+    }
 }
 #[doc(hidden)]
 pub use crate::file::File;
@@ -260,6 +445,16 @@ mod token_stream;
 pub use crate::token_stream::{
     Delimiter, Group, Ident, Literal, Punct, Spacing, TokenStream, TokenTree,
 };
+
+mod span;
+#[doc(hidden)]
+pub use crate::span::SpanInfo;
+
+mod comment;
+#[doc(hidden)]
+pub use crate::comment::{Comment, CommentKind};
+
+mod comment_association;
 
 #[cfg(feature = "json")]
 #[cfg_attr(docsrs, doc(cfg(feature = "json")))]

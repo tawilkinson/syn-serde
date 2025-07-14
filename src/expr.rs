@@ -103,6 +103,7 @@ mod convert {
                 attrs: other.attrs.map_into(),
                 expr: other.expr.map_into(),
                 arms: from_syn_arms(&other.arms),
+                comments: vec![],
             }
         }
     }

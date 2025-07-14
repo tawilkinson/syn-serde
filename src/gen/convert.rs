@@ -11,6 +11,7 @@
     clippy::match_single_binding,
 )]
 use crate::*;
+use syn::spanned::Spanned;
 syn_trait_impl!(syn::Abi);
 impl From<&syn::Abi> for Abi {
     fn from(node: &syn::Abi) -> Self {
@@ -234,6 +235,8 @@ impl From<&syn::Block> for Block {
     fn from(node: &syn::Block) -> Self {
         Self {
             stmts: node.stmts.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.brace_token.span.join())),
+            comments: vec![],
         }
     }
 }
@@ -406,6 +409,7 @@ impl From<&syn::ExprArray> for ExprArray {
         Self {
             attrs: node.attrs.map_into(),
             elems: node.elems.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.bracket_token.span.join())),
         }
     }
 }
@@ -425,6 +429,7 @@ impl From<&syn::ExprAssign> for ExprAssign {
             attrs: node.attrs.map_into(),
             left: node.left.map_into(),
             right: node.right.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.left.span())),
         }
     }
 }
@@ -445,6 +450,7 @@ impl From<&syn::ExprAsync> for ExprAsync {
             attrs: node.attrs.map_into(),
             capture: node.capture.is_some(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -485,6 +491,7 @@ impl From<&syn::ExprBinary> for ExprBinary {
             left: node.left.map_into(),
             op: node.op.ref_into(),
             right: node.right.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.op.span())),
         }
     }
 }
@@ -505,6 +512,8 @@ impl From<&syn::ExprBlock> for ExprBlock {
             attrs: node.attrs.map_into(),
             label: node.label.map_into(),
             block: node.block.ref_into(),
+            span: Some(crate::SpanInfo::from_span(node.block.brace_token.span.join())),
+            comments: vec![],
         }
     }
 }
@@ -544,6 +553,7 @@ impl From<&syn::ExprCall> for ExprCall {
             attrs: node.attrs.map_into(),
             func: node.func.map_into(),
             args: node.args.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.func.span())),
         }
     }
 }
@@ -616,6 +626,7 @@ impl From<&syn::ExprConst> for ExprConst {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -653,6 +664,7 @@ impl From<&syn::ExprField> for ExprField {
             attrs: node.attrs.map_into(),
             base: node.base.map_into(),
             member: node.member.ref_into(),
+            span: Some(crate::SpanInfo::from_span(node.member.span())),
         }
     }
 }
@@ -675,6 +687,7 @@ impl From<&syn::ExprForLoop> for ExprForLoop {
             pat: node.pat.map_into(),
             expr: node.expr.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -717,6 +730,8 @@ impl From<&syn::ExprIf> for ExprIf {
             cond: node.cond.map_into(),
             then_branch: node.then_branch.ref_into(),
             else_branch: node.else_branch.ref_map(|(_0, _1)| (*_1).map_into()),
+            span: Some(crate::SpanInfo::from_span(node.if_token.span())),
+            comments: vec![],
         }
     }
 }
@@ -812,6 +827,7 @@ impl From<&syn::ExprLoop> for ExprLoop {
             attrs: node.attrs.map_into(),
             label: node.label.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -851,6 +867,7 @@ impl From<&syn::ExprMethodCall> for ExprMethodCall {
             method: node.method.ref_into(),
             turbofish: node.turbofish.map_into(),
             args: node.args.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.method.span())),
         }
     }
 }
@@ -994,6 +1011,7 @@ impl From<&syn::ExprStruct> for ExprStruct {
             fields: node.fields.map_into(),
             dot2_token: node.dot2_token.is_some(),
             rest: node.rest.ref_map(MapInto::map_into),
+            span: Some(crate::SpanInfo::from_span(node.path.span())),
         }
     }
 }
@@ -1034,6 +1052,7 @@ impl From<&syn::ExprTryBlock> for ExprTryBlock {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1052,6 +1071,7 @@ impl From<&syn::ExprTuple> for ExprTuple {
         Self {
             attrs: node.attrs.map_into(),
             elems: node.elems.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.paren_token.span.join())),
         }
     }
 }
@@ -1071,6 +1091,7 @@ impl From<&syn::ExprUnary> for ExprUnary {
             attrs: node.attrs.map_into(),
             op: node.op.ref_into(),
             expr: node.expr.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.op.span())),
         }
     }
 }
@@ -1089,6 +1110,7 @@ impl From<&syn::ExprUnsafe> for ExprUnsafe {
         Self {
             attrs: node.attrs.map_into(),
             block: node.block.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1109,6 +1131,7 @@ impl From<&syn::ExprWhile> for ExprWhile {
             label: node.label.map_into(),
             cond: node.cond.map_into(),
             body: node.body.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -1282,6 +1305,7 @@ impl From<&syn::File> for File {
             shebang: node.shebang.map_into(),
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.span())),
         }
     }
 }
@@ -1627,14 +1651,17 @@ impl From<&ImplRestriction> for syn::ImplRestriction {
 syn_trait_impl!(syn::Index);
 impl From<&syn::Index> for Index {
     fn from(node: &syn::Index) -> Self {
-        Self { index: node.index }
+        Self {
+            index: node.index,
+            span: node.span.ref_into(),
+        }
     }
 }
 impl From<&Index> for syn::Index {
     fn from(node: &Index) -> Self {
         Self {
             index: node.index,
-            span: proc_macro2::Span::call_site(),
+            span: node.span.ref_into(),
         }
     }
 }
@@ -1694,6 +1721,8 @@ impl From<&syn::ItemConst> for ItemConst {
             generics: node.generics.ref_into(),
             ty: node.ty.map_into(),
             expr: node.expr.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1722,6 +1751,8 @@ impl From<&syn::ItemEnum> for ItemEnum {
             ident: node.ident.ref_into(),
             generics: node.generics.ref_into(),
             variants: node.variants.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1770,6 +1801,8 @@ impl From<&syn::ItemFn> for ItemFn {
             vis: node.vis.ref_into(),
             sig: node.sig.ref_into(),
             block: node.block.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.sig.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1791,6 +1824,7 @@ impl From<&syn::ItemForeignMod> for ItemForeignMod {
             unsafety: node.unsafety.is_some(),
             abi: node.abi.ref_into(),
             items: node.items.map_into(),
+            comments: vec![],
         }
     }
 }
@@ -1818,6 +1852,8 @@ impl From<&syn::ItemImpl> for ItemImpl {
                 .ref_map(|(_0, _1, _2)| ((*_0).is_some(), (*_1).ref_into())),
             self_ty: node.self_ty.map_into(),
             items: node.items.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.impl_token.span())),
+            comments: vec![],
         }
     }
 }
@@ -1899,6 +1935,8 @@ impl From<&syn::ItemStatic> for ItemStatic {
             ident: node.ident.ref_into(),
             ty: node.ty.map_into(),
             expr: node.expr.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1932,6 +1970,8 @@ impl From<&syn::ItemTrait> for ItemTrait {
             colon_token: node.colon_token.is_some(),
             supertraits: node.supertraits.map_into(),
             items: node.items.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -1988,6 +2028,8 @@ impl From<&syn::ItemType> for ItemType {
             ident: node.ident.ref_into(),
             generics: node.generics.ref_into(),
             ty: node.ty.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
+            comments: vec![],
         }
     }
 }
@@ -2014,6 +2056,7 @@ impl From<&syn::ItemUnion> for ItemUnion {
             ident: node.ident.ref_into(),
             generics: node.generics.ref_into(),
             fields: node.fields.ref_into(),
+            comments: vec![],
         }
     }
 }
@@ -2037,6 +2080,8 @@ impl From<&syn::ItemUse> for ItemUse {
             vis: node.vis.ref_into(),
             leading_colon: node.leading_colon.is_some(),
             tree: node.tree.ref_into(),
+            span: Some(crate::SpanInfo::from_span(node.use_token.span())),
+            comments: vec![],
         }
     }
 }
@@ -2070,6 +2115,7 @@ syn_trait_impl!(syn::Lifetime);
 impl From<&syn::Lifetime> for Lifetime {
     fn from(node: &syn::Lifetime) -> Self {
         Self {
+            apostrophe: node.apostrophe.ref_into(),
             ident: node.ident.ref_into(),
         }
     }
@@ -2077,7 +2123,7 @@ impl From<&syn::Lifetime> for Lifetime {
 impl From<&Lifetime> for syn::Lifetime {
     fn from(node: &Lifetime) -> Self {
         Self {
-            apostrophe: proc_macro2::Span::call_site(),
+            apostrophe: node.apostrophe.ref_into(),
             ident: node.ident.ref_into(),
         }
     }
@@ -2136,14 +2182,17 @@ impl From<&Lit> for syn::Lit {
 syn_trait_impl!(syn::LitBool);
 impl From<&syn::LitBool> for LitBool {
     fn from(node: &syn::LitBool) -> Self {
-        Self { value: node.value }
+        Self {
+            value: node.value,
+            span: node.span.ref_into(),
+        }
     }
 }
 impl From<&LitBool> for syn::LitBool {
     fn from(node: &LitBool) -> Self {
         Self {
             value: node.value,
-            span: proc_macro2::Span::call_site(),
+            span: node.span.ref_into(),
         }
     }
 }
@@ -2154,6 +2203,7 @@ impl From<&syn::Local> for Local {
             attrs: node.attrs.map_into(),
             pat: node.pat.ref_into(),
             init: node.init.map_into(),
+            span: Some(crate::SpanInfo::from_span(node.pat.span())),
         }
     }
 }
@@ -2373,6 +2423,7 @@ impl From<&syn::PatIdent> for PatIdent {
             mutability: node.mutability.is_some(),
             ident: node.ident.ref_into(),
             subpat: node.subpat.ref_map(|(_0, _1)| (*_1).map_into()),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
         }
     }
 }
@@ -2487,6 +2538,7 @@ impl From<&syn::PatStruct> for PatStruct {
             path: node.path.ref_into(),
             fields: node.fields.map_into(),
             rest: node.rest.map_into(),
+            span: Some(crate::SpanInfo::from_span(proc_macro2::Span::call_site())),
         }
     }
 }
@@ -2508,6 +2560,7 @@ impl From<&syn::PatTuple> for PatTuple {
         Self {
             attrs: node.attrs.map_into(),
             elems: node.elems.map_into(),
+            span: Some(crate::SpanInfo::from_span(proc_macro2::Span::call_site())),
         }
     }
 }
@@ -2584,6 +2637,15 @@ impl From<&syn::Path> for Path {
         Self {
             leading_colon: node.leading_colon.is_some(),
             segments: node.segments.map_into(),
+            span: Some(
+                crate::SpanInfo::from_span(
+                    if node.segments.is_empty() {
+                        proc_macro2::Span::call_site()
+                    } else {
+                        node.segments.first().unwrap().ident.span()
+                    },
+                ),
+            ),
         }
     }
 }
@@ -2628,6 +2690,7 @@ impl From<&syn::PathSegment> for PathSegment {
         Self {
             ident: node.ident.ref_into(),
             arguments: node.arguments.ref_into(),
+            span: Some(crate::SpanInfo::from_span(node.ident.span())),
         }
     }
 }

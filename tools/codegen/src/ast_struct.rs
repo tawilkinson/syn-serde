@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn_codegen::{Data, Definitions, Node, Punctuated, Type};
 
-use crate::{convert::EMPTY_STRUCTS, file, traverse};
+use crate::{convert::{EMPTY_STRUCTS, should_have_span}, file, traverse};
 
 const AST_ENUM_SRC: &str = "src/gen/ast_struct.rs";
 
@@ -202,7 +202,7 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
             }
         },
         Type::Token(_) | Type::Group(_) => None,
-        Type::Ext(t) if t == "Span" => None,
+        Type::Ext(t) if t == "Span" => Some(quote!(SpanInfo)),
         Type::Syn(t) if t == "Reserved" => None,
         Type::Syn(t) if EMPTY_STRUCTS.contains(&&**t) => None,
         Type::Syn(t) | Type::Ext(t) | Type::Std(t) => {
@@ -210,6 +210,25 @@ fn format_ty(ty: &Type) -> Option<TokenStream> {
             Some(quote!(#t))
         }
         Type::Tuple(_) => unreachable!("format_ty: {:?}", ty),
+    }
+}
+
+
+
+// Determine if a type should have comments attached to it
+fn should_have_comments(ident: &str) -> bool {
+    // Add comments to major structural elements that users typically comment
+    match ident {
+        // Item types that commonly have comments
+        "ItemFn" | "ItemEnum" | "ItemImpl" | "ItemUse" | 
+        "ItemConst" | "ItemStatic" | "ItemTrait" | "ItemType" |
+        "ItemStruct" | "ItemUnion" | "ItemMod" | "ItemForeignMod" |
+        // Block types that can have comments
+        "Block" | "ExprBlock" | "ExprIf" | "ExprLoop" | "ExprWhile" |
+        "ExprForLoop" | "ExprMatch" | "ExprTryBlock" | "ExprUnsafe" |
+        "ExprAsync" | "ExprConst" => true,
+        // Exclude File - comments should be attached to items instead
+        _ => false,
     }
 }
 
@@ -221,7 +240,13 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
     if let Data::Struct(fields) = &node.data {
         let mut body = vec![];
         let mut last = "";
+        let mut has_existing_span = false;
+        
+        // Process existing fields
         for (field, ty) in fields {
+            if field == "span" {
+                has_existing_span = true;
+            }
             if let Some(t) = format_ty(ty) {
                 let attrs = field_attrs(field, ty, defs);
                 let rename = rename(&node.ident, field).map(|s| quote!(#[serde(rename = #s)]));
@@ -244,8 +269,35 @@ fn node(impls: &mut TokenStream, node: &Node, defs: &Definitions) {
                 last = &**field;
             }
         }
+        
+        // Add span field if the type should have one and doesn't already
+        if should_have_span(&node.ident) && !has_existing_span {
+            // Check if this type has any flattened fields that might already have spans
+            let has_flattened_spannable = fields.iter().any(|(field, ty)| {
+                flatten(&node.ident, field, ty) && match (field.as_str(), base_ty(ty)) {
+                    ("path", Some("Path")) => true, // Path has spans
+                    ("lit", Some("Lit")) => true,   // Lit can have spans 
+                    _ => false,
+                }
+            });
+            
+            if !has_flattened_spannable {
+                body.push(quote! {
+                    #[serde(default, skip_serializing_if = "Option::is_none")]
+                    pub(crate) span: Option<SpanInfo>,
+                });
+            }
+        }
+        
+        // Add comments field if the type should have comments
+        if should_have_comments(&node.ident) {
+            body.push(quote! {
+                #[serde(default, skip_serializing_if = "Vec::is_empty")]
+                pub(crate) comments: Vec<crate::Comment>,
+            });
+        }
 
-        let transparent = if body.len() == 1 && allow_transparent(&node.ident, last, &fields[last])
+        let transparent = if body.len() == 1 && !should_have_span(&node.ident) && allow_transparent(&node.ident, last, &fields[last])
         {
             Some(quote!(#[serde(transparent)]))
         } else {

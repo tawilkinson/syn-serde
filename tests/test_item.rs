@@ -326,7 +326,17 @@ fn test_enum() {
                     ]
                   }
                 },
-                "index": 0
+                "index": {
+                  "index": 0,
+                  "span": {
+                    "start_offset": 0,
+                    "end_offset": 0,
+                    "start_line": 1,
+                    "start_column": 0,
+                    "end_line": 1,
+                    "end_column": 0
+                  }
+                }
               }
             }
           }
@@ -578,4 +588,19 @@ fn test_static_mut() {
     let json: syn_serde::Item = serde_json::from_str(json).unwrap();
     let json = Item::from(&json);
     assert_eq!(json, actual);
+}
+#[test]
+fn test_backward_compatibility() {
+    // Test that JSON without spans still deserializes correctly
+    let json_without_spans = r#"
+    {
+      "struct": {
+        "ident": "Unit",
+        "fields": "unit"
+      }
+    }
+    "#;
+    
+    let _parsed: syn_serde::Item = serde_json::from_str(json_without_spans).unwrap();
+    println!("Backward compatibility test passed - JSON without spans can still be parsed!");
 }
