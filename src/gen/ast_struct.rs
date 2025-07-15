@@ -526,6 +526,8 @@ pub struct File {
     pub(crate) items: Vec<Item>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) span: Option<SpanInfo>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) comments: Vec<crate::Comment>,
 }
 /// An adapter for [`struct@syn::ForeignItemFn`].
 #[derive(Serialize, Deserialize)]

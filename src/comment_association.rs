@@ -30,93 +30,51 @@ pub(crate) fn associate_comments_with_nodes(
 
 /// Find the best AST node to associate a comment with.
 /// 
-/// The algorithm works as follows:
-/// 1. If the comment is on the same line as a node and within its bounds, associate it with that node
-/// 2. If the comment is immediately before a node (line before), associate it with that node
-/// 3. If the comment is inside a block or immediately after a node, associate it with that node
-/// 4. Otherwise, find the nearest enclosing node
+/// The algorithm is conservative and only associates comments that are truly inside a node's span.
+/// Comments are only associated with function blocks if they are wholly within the curly braces.
 fn find_best_node_for_comment(comment: &Comment, node_spans: &[(String, SpanInfo)]) -> Option<String> {
-    let comment_line = comment.span.start_line;
-    let comment_column = comment.span.start_column;
-    
-    // First pass: look for nodes on the same line
+    // Only look for block nodes (not function declaration nodes)
+    // This ensures comments are only nested within function blocks, not function declarations
     for (node_id, node_span) in node_spans {
-        if comment_line == node_span.start_line {
-            // Comment is on the same line as the node start
-            // Only associate if comment is after the node start (not before)
-            if comment_column >= node_span.start_column {
-                return Some(node_id.clone());
-            }
-        }
-        if comment_line == node_span.end_line {
-            // Comment is on the same line as the node end
-            // Only associate if comment is before the node end (inside the node)
-            if comment_column < node_span.end_column {
-                return Some(node_id.clone());
-            }
-        }
-    }
-    
-    // Second pass: look for nodes that start immediately after the comment
-    for (node_id, node_span) in node_spans {
-        if comment_line + 1 == node_span.start_line {
-            // Comment is immediately before this node
+        // Only consider block nodes for comment association
+        if node_id.ends_with("_block") && is_comment_strictly_inside_node(comment, node_span) {
             return Some(node_id.clone());
         }
     }
     
-    // Third pass: look for nodes that contain the comment
-    for (node_id, node_span) in node_spans {
-        if is_comment_inside_node(comment, node_span) {
-            return Some(node_id.clone());
-        }
-    }
-    
-    // Fourth pass: find the nearest enclosing node
-    find_nearest_enclosing_node(comment, node_spans)
+    // If no block node strictly contains the comment, don't associate it
+    None
 }
 
-/// Check if a comment is inside a node's span.
-fn is_comment_inside_node(comment: &Comment, node_span: &SpanInfo) -> bool {
+/// Check if a comment is strictly inside a node's span.
+/// This is much more conservative than the original logic.
+/// A comment is considered "inside" if:
+/// 1. It's on a line strictly between start and end lines, OR
+/// 2. It's on the start line but after the start column (for cases like "{ // comment"), OR  
+/// 3. It's on the end line but before the end column (for cases like "// comment }")
+fn is_comment_strictly_inside_node(comment: &Comment, node_span: &SpanInfo) -> bool {
     let comment_line = comment.span.start_line;
     let comment_column = comment.span.start_column;
     
-    // Check if comment is within the node's line range
-    if comment_line < node_span.start_line || comment_line > node_span.end_line {
-        return false;
+    // Case 1: Comment is strictly between start and end lines
+    if comment_line > node_span.start_line && comment_line < node_span.end_line {
+        return true;
     }
     
-    // If comment is on the same line as node start, check column
-    if comment_line == node_span.start_line && comment_column < node_span.start_column {
-        return false;
+    // Case 2: Comment is on the start line but after the start column (e.g., "{ // comment")
+    if comment_line == node_span.start_line && comment_column > node_span.start_column {
+        return true;
     }
     
-    // If comment is on the same line as node end, check column
-    if comment_line == node_span.end_line && comment_column > node_span.end_column {
-        return false;
+    // Case 3: Comment is on the end line but before the end column (e.g., "// comment }")
+    if comment_line == node_span.end_line && comment_column < node_span.end_column {
+        return true;
     }
     
-    true
+    false
 }
 
-/// Find the nearest enclosing node for a comment.
-fn find_nearest_enclosing_node(comment: &Comment, node_spans: &[(String, SpanInfo)]) -> Option<String> {
-    let mut best_node: Option<String> = None;
-    let mut best_span_size = usize::MAX;
-    
-    for (node_id, node_span) in node_spans {
-        if is_comment_inside_node(comment, node_span) {
-            let span_size = ((node_span.end_line - node_span.start_line) as usize) * 1000 + 
-                           ((node_span.end_column - node_span.start_column) as usize);
-            if span_size < best_span_size {
-                best_span_size = span_size;
-                best_node = Some(node_id.clone());
-            }
-        }
-    }
-    
-    best_node
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -150,10 +108,8 @@ mod tests {
         ];
         
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
-        assert_eq!(associations.len(), 1);
-        assert!(associations.contains_key("fn_foo"));
-        assert_eq!(associations["fn_foo"].len(), 1);
-        assert_eq!(associations["fn_foo"][0].text, "Line 2");
+        // Comment should NOT be associated with function declaration
+        assert_eq!(associations.len(), 0);
     }
     
     #[test]
@@ -183,10 +139,8 @@ mod tests {
         ];
         
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
-        assert_eq!(associations.len(), 1);
-        assert!(associations.contains_key("fn_foo"));
-        assert_eq!(associations["fn_foo"].len(), 1);
-        assert_eq!(associations["fn_foo"][0].text, "white space");
+        // Comment should NOT be associated with function declaration
+        assert_eq!(associations.len(), 0);
     }
     
     #[test]
@@ -205,7 +159,7 @@ mod tests {
         };
         
         let node_spans = vec![
-            ("block_body".to_string(), SpanInfo {
+            ("item_0_block".to_string(), SpanInfo {
                 start_offset: 0,
                 end_offset: 0,
                 start_line: 4,
@@ -217,9 +171,9 @@ mod tests {
         
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
         assert_eq!(associations.len(), 1);
-        assert!(associations.contains_key("block_body"));
-        assert_eq!(associations["block_body"].len(), 1);
-        assert_eq!(associations["block_body"][0].text, "Line 4, Column 10");
+        assert!(associations.contains_key("item_0_block"));
+        assert_eq!(associations["item_0_block"].len(), 1);
+        assert_eq!(associations["item_0_block"][0].text, "Line 4, Column 10");
     }
     
     #[test]
