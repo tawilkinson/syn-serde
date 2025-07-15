@@ -31,18 +31,24 @@ pub(crate) fn associate_comments_with_nodes(
 /// Find the best AST node to associate a comment with.
 /// 
 /// The algorithm is conservative and only associates comments that are truly inside a node's span.
-/// Comments are only associated with function blocks if they are wholly within the curly braces.
+/// Comments are associated with function declarations if they are on the same line after the function name.
+/// Comments are associated with function blocks if they are wholly within the curly braces.
 fn find_best_node_for_comment(comment: &Comment, node_spans: &[(String, SpanInfo)]) -> Option<String> {
-    // Only look for block nodes (not function declaration nodes)
-    // This ensures comments are only nested within function blocks, not function declarations
+    // First, check for block nodes (highest priority - comments inside function body)
     for (node_id, node_span) in node_spans {
-        // Only consider block nodes for comment association
         if node_id.ends_with("_block") && is_comment_strictly_inside_node(comment, node_span) {
             return Some(node_id.clone());
         }
     }
     
-    // If no block node strictly contains the comment, don't associate it
+    // Second, check for function declaration nodes (for comments on same line as function)
+    for (node_id, node_span) in node_spans {
+        if !node_id.ends_with("_block") && is_comment_on_function_declaration_line(comment, node_span, node_spans) {
+            return Some(node_id.clone());
+        }
+    }
+    
+    // If no node can claim the comment, don't associate it
     None
 }
 
@@ -74,6 +80,46 @@ fn is_comment_strictly_inside_node(comment: &Comment, node_span: &SpanInfo) -> b
     false
 }
 
+/// Check if a comment is on the same line as a function declaration and should be associated with it.
+/// This handles comments that appear between the function signature and the opening brace.
+/// A comment is associated with a function if:
+/// 1. It's on the same line as the function identifier, OR
+/// 2. It's between the function declaration line and the opening brace line
+/// 3. It starts after the function identifier ends (if on same line)
+/// 4. It's before the function block starts
+fn is_comment_on_function_declaration_line(comment: &Comment, fn_span: &SpanInfo, all_spans: &[(String, SpanInfo)]) -> bool {
+    let comment_line = comment.span.start_line;
+    let comment_column = comment.span.start_column;
+    
+    // Find the corresponding block span for this function 
+    let mut block_start_line = None;
+    for (node_id, block_span) in all_spans {
+        if node_id.ends_with("_block") {
+            // Check if this block likely belongs to this function
+            // (simple heuristic: block starts after function declaration)
+            if block_span.start_line >= fn_span.start_line {
+                block_start_line = Some(block_span.start_line);
+                break;
+            }
+        }
+    }
+    
+    // Case 1: Comment is on the same line as the function identifier
+    if comment_line == fn_span.start_line {
+        // Must start after the function identifier ends
+        return comment_column > fn_span.end_column;
+    }
+    
+    // Case 2: Comment is between function declaration and opening brace
+    if let Some(block_line) = block_start_line {
+        if comment_line > fn_span.start_line && comment_line < block_line {
+            return true;
+        }
+    }
+    
+    false
+}
+
 
 
 #[cfg(test)]
@@ -97,7 +143,7 @@ mod tests {
         };
         
         let node_spans = vec![
-            ("fn_foo".to_string(), SpanInfo {
+            ("item_0".to_string(), SpanInfo {
                 start_offset: 0,
                 end_offset: 0,
                 start_line: 2,
@@ -105,11 +151,22 @@ mod tests {
                 end_line: 2,
                 end_column: 6,
             }),
+            ("item_0_block".to_string(), SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 4,
+                start_column: 9,
+                end_line: 8,
+                end_column: 10,
+            }),
         ];
         
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
-        // Comment should NOT be associated with function declaration
-        assert_eq!(associations.len(), 0);
+        // Comment should be associated with function declaration since it's on the same line after the function
+        assert_eq!(associations.len(), 1);
+        assert!(associations.contains_key("item_0"));
+        assert_eq!(associations["item_0"].len(), 1);
+        assert_eq!(associations["item_0"][0].text, "Line 2");
     }
     
     #[test]
@@ -128,7 +185,7 @@ mod tests {
         };
         
         let node_spans = vec![
-            ("fn_foo".to_string(), SpanInfo {
+            ("item_0".to_string(), SpanInfo {
                 start_offset: 0,
                 end_offset: 0,
                 start_line: 2,
@@ -139,7 +196,7 @@ mod tests {
         ];
         
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
-        // Comment should NOT be associated with function declaration
+        // Comment should NOT be associated with function declaration (it's before the function)
         assert_eq!(associations.len(), 0);
     }
     
@@ -213,5 +270,47 @@ mod tests {
         let associations = associate_comments_with_nodes(&[comment], &node_spans);
         // Comment should not be associated with any node since it's outside their scope
         assert_eq!(associations.len(), 0);
+    }
+    
+    #[test]
+    fn test_comment_between_function_and_brace() {
+        let comment = Comment {
+            text: "Between function and brace".to_string(),
+            span: SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 3,
+                start_column: 0,
+                end_line: 3,
+                end_column: 29,
+            },
+            kind: CommentKind::Line,
+        };
+        
+        let node_spans = vec![
+            ("item_0".to_string(), SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 2,  // Function on line 2
+                start_column: 3,
+                end_line: 2,
+                end_column: 6,
+            }),
+            ("item_0_block".to_string(), SpanInfo {
+                start_offset: 0,
+                end_offset: 0,
+                start_line: 4,  // Block starts on line 4
+                start_column: 0,
+                end_line: 6,
+                end_column: 1,
+            }),
+        ];
+        
+        let associations = associate_comments_with_nodes(&[comment], &node_spans);
+        // Comment should be associated with function since it's between function and brace
+        assert_eq!(associations.len(), 1);
+        assert!(associations.contains_key("item_0"));
+        assert_eq!(associations["item_0"].len(), 1);
+        assert_eq!(associations["item_0"][0].text, "Between function and brace");
     }
 }
