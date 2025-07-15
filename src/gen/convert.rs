@@ -1306,6 +1306,7 @@ impl From<&syn::File> for File {
             attrs: node.attrs.map_into(),
             items: node.items.map_into(),
             span: Some(crate::SpanInfo::from_span(node.span())),
+            comments: Vec::new(),
         }
     }
 }

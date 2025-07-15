@@ -188,7 +188,19 @@ mod file {
             let comment_associations = associate_comments_with_file_nodes(&comments, &file);
             
             // Apply the comment associations to the file structure
-            apply_comment_associations(&mut file, comment_associations);
+            apply_comment_associations(&mut file, comment_associations.clone());
+            
+            // Preserve unassociated comments at the file level
+            let associated_comment_ids: std::collections::HashSet<_> = comment_associations
+                .values()
+                .flat_map(|comment_list| comment_list.iter())
+                .map(|comment| (comment.span.start_line, comment.span.start_column))
+                .collect();
+                
+            file.comments = comments
+                .into_iter()
+                .filter(|comment| !associated_comment_ids.contains(&(comment.span.start_line, comment.span.start_column)))
+                .collect();
             
             file
         }
